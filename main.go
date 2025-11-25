@@ -3,33 +3,26 @@ package main
 import (
 	"fmt"
 	"log"
-	"sync"
+	"net/http"
 
+	"health-checker/api"
 	"health-checker/monitor"
 )
 
 func main() {
 	store := monitor.NewStore()
+	api := api.API{Store: store}
 
-	sitesMonitorados, err := store.Listar()
+	port := ":8080"
+
+	http.HandleFunc("/", api.HomeHandler)
+	http.HandleFunc("/adicionar", api.CreateHandler)
+	http.HandleFunc("/atualizar", api.UpdateHandler)
+	http.HandleFunc("/remover", api.DeleteHandler)
+
+	fmt.Printf("Server listening at port %s\n", port)
+	err := http.ListenAndServe(port, nil)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	var wg sync.WaitGroup
-	canal := make(chan string)
-
-	for _, site := range sitesMonitorados {
-		wg.Add(1)
-		go monitor.Check(site, &wg, canal)
-	}
-
-	go func() {
-		wg.Wait()
-		close(canal)
-	}()
-
-	for msg := range canal {
-		fmt.Println(msg)
 	}
 }
