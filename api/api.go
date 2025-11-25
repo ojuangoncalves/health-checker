@@ -43,6 +43,11 @@ func (a *API) CreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if (site.Nome == "") || (site.URL == "") {
+		http.Error(w, "Informe todos os dados necessários: Nome e URL", http.StatusBadRequest)
+		return
+	}
+
 	err = a.Store.Adicionar(site)
 	if err != nil {
 		http.Error(w, "Erro ao adicionar site", http.StatusInternalServerError)
@@ -93,6 +98,26 @@ func (a *API) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "ID informado não é válido", http.StatusBadRequest)
+		return
+	}
+
+	sites, err := a.Store.Listar()
+	if err != nil {
+		http.Error(w, "Erro ao buscar sites", http.StatusInternalServerError)
+		return
+	}
+
+	var idValido bool
+
+	for _, site := range sites {
+		if site.ID == id {
+			idValido = true
+			break
+		}
+	}
+
+	if !idValido {
+		http.Error(w, "ID não encontrado", http.StatusBadRequest)
 		return
 	}
 
