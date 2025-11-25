@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"health-checker/monitor"
+	"github.com/ojuangoncalves/health-checker/monitor"
 )
 
 type API struct {

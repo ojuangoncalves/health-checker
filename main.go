@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"health-checker/api"
-	"health-checker/monitor"
+	"github.com/ojuangoncalves/health-checker/api"
+	"github.com/ojuangoncalves/health-checker/monitor"
 )
 
 func main() {
