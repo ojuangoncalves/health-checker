@@ -1,7 +1,9 @@
 package monitor
 
 import (
+	"log"
 	"net/http"
+	"time"
 )
 
 type Monitoravel interface {
@@ -16,11 +18,17 @@ type Site struct {
 	Status int    `json:"status"`
 }
 
+var httpClient = &http.Client{
+	Timeout: 5 * time.Second,
+}
+
 func (s Site) Verificar() (int, error) {
-	resp, err := http.Get(s.URL)
+	resp, err := httpClient.Get(s.URL)
 	if err != nil {
-		return 0, err
+		s.Status = 0
+		return s.Status, err
 	}
+	defer resp.Body.Close()
 
 	s.Status = resp.StatusCode
 
@@ -34,7 +42,7 @@ func (s Site) GetNome() string {
 func Check(site *Site, store *Store) error {
 	status, err := site.Verificar()
 	if err != nil {
-		status = 0
+		log.Printf("Erro ao verificar %s: %v\n", site.URL, err)
 	}
 
 	site.Status = status

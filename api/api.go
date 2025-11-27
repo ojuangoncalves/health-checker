@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"sync"
 
@@ -12,6 +13,22 @@ import (
 
 type API struct {
 	Store *monitor.Store
+}
+
+func validarURL(rawURL string) error {
+	u, err := url.ParseRequestURI(rawURL)
+	if err != nil {
+		return err
+	}
+
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("URL deve começar com http:// ou https://")
+	}
+	if u.Host == "" {
+		return fmt.Errorf("URL inválida: host não encontrado")
+	}
+
+	return nil
 }
 
 // Busca todos os sites
@@ -28,20 +45,28 @@ func (a *API) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var erros []error
 
 	for i := range sitesMonitorados {
 		wg.Add(1)
 		go func(s *monitor.Site) {
 			defer wg.Done()
+
 			err = monitor.Check(s, a.Store)
 			if err != nil {
-				fmt.Println("Erro ao executar o check")
-				return
+				mu.Lock()
+				erros = append(erros, err)
+				mu.Unlock()
 			}
 		}(&sitesMonitorados[i])
 	}
 
 	wg.Wait()
+
+	if len(erros) > 0 {
+		fmt.Println("Ocorreram error em alguns checks:", len(erros))
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(sitesMonitorados)
@@ -63,6 +88,11 @@ func (a *API) CreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	if (site.Nome == "") || (site.URL == "") {
 		http.Error(w, "Informe todos os dados necessários: Nome e URL", http.StatusBadRequest)
+		return
+	}
+
+	if err = validarURL(site.URL); err != nil {
+		http.Error(w, "URL inválida: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -94,6 +124,13 @@ func (a *API) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Valor informado não é válido", http.StatusBadRequest)
 		return
+	}
+
+	if site.URL != "" {
+		if err = validarURL(site.URL); err != nil {
+			http.Error(w, "URL inválida: "+err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	err = a.Store.Atualizar(id, site)
