@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strings"
 
@@ -23,7 +24,8 @@ func NewStore() *Store {
   CREATE TABLE IF NOT EXISTS sites (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT,
-    url TEXT
+    url TEXT,
+    status INTEGER
   );
   `
 
@@ -42,9 +44,11 @@ func (s *Store) Adicionar(site Site) error {
 }
 
 func (s *Store) Listar() ([]Site, error) {
-	stmt := "SELECT id, nome, url FROM sites"
+	stmt := "SELECT id, nome, url, IFNULL(status, 0) FROM sites"
 	rows, err := s.Db.Query(stmt)
 	if err != nil {
+		fmt.Println("Erro no query")
+		fmt.Println(err.Error())
 		return nil, err
 	}
 
@@ -55,8 +59,10 @@ func (s *Store) Listar() ([]Site, error) {
 	for rows.Next() {
 		var site Site
 
-		err = rows.Scan(&site.ID, &site.Nome, &site.URL)
+		err = rows.Scan(&site.ID, &site.Nome, &site.URL, &site.Status)
 		if err != nil {
+			fmt.Println("Erro no scan")
+			fmt.Println(err.Error())
 			return nil, err
 		}
 
@@ -70,9 +76,9 @@ func (s *Store) Listar() ([]Site, error) {
 	return lista, nil
 }
 
-func (s *Store) Remover(idDoSite int) error {
+func (s *Store) Remover(IDSite int) error {
 	stmt := "DELETE FROM sites WHERE id = ?"
-	_, err := s.Db.Exec(stmt, idDoSite)
+	_, err := s.Db.Exec(stmt, IDSite)
 	return err
 }
 
@@ -98,6 +104,14 @@ func (s *Store) Atualizar(IDSite int, site Site) error {
 	args = append(args, IDSite)
 
 	_, err := s.Db.Exec(stmt, args...)
+
+	return err
+}
+
+func (s *Store) AtualizarStatusSite(IDSite int, statusCode int) error {
+	stmt := "UPDATE sites SET status = ? WHERE id = ?"
+
+	_, err := s.Db.Exec(stmt, statusCode, IDSite)
 
 	return err
 }

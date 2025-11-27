@@ -11,6 +11,8 @@ import (
 
 func main() {
 	store := monitor.NewStore()
+	defer store.Db.Close()
+
 	api := api.API{Store: store}
 
 	port := ":8080"

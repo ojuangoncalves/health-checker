@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 
 	"github.com/ojuangoncalves/health-checker/monitor"
 )
@@ -19,14 +21,30 @@ func (a *API) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sites, err := a.Store.Listar()
+	sitesMonitorados, err := a.Store.Listar()
 	if err != nil {
 		http.Error(w, "Erro ao buscar os sites", http.StatusInternalServerError)
 		return
 	}
 
+	var wg sync.WaitGroup
+
+	for i := range sitesMonitorados {
+		wg.Add(1)
+		go func(s *monitor.Site) {
+			defer wg.Done()
+			err = monitor.Check(s, a.Store)
+			if err != nil {
+				fmt.Println("Erro ao executar o check")
+				return
+			}
+		}(&sitesMonitorados[i])
+	}
+
+	wg.Wait()
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sites)
+	json.NewEncoder(w).Encode(sitesMonitorados)
 }
 
 // Adiciona um site no banco de dados

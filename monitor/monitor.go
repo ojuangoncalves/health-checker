@@ -1,9 +1,7 @@
 package monitor
 
 import (
-	"fmt"
 	"net/http"
-	"sync"
 )
 
 type Monitoravel interface {
@@ -12,9 +10,10 @@ type Monitoravel interface {
 }
 
 type Site struct {
-	ID   int
-	Nome string
-	URL  string
+	ID     int    `json:"id"`
+	Nome   string `json:"nome"`
+	URL    string `json:"url"`
+	Status int    `json:"status"`
 }
 
 func (s Site) Verificar() (int, error) {
@@ -22,21 +21,24 @@ func (s Site) Verificar() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return resp.StatusCode, nil
+
+	s.Status = resp.StatusCode
+
+	return s.Status, nil
 }
 
 func (s Site) GetNome() string {
 	return s.Nome
 }
 
-func Check(site Monitoravel, wg *sync.WaitGroup, canal chan string) {
-	defer wg.Done()
-
+func Check(site *Site, store *Store) error {
 	status, err := site.Verificar()
 	if err != nil {
-		canal <- fmt.Sprintf("Site: %s | Erro: %s", site.GetNome(), err.Error())
-		return
+		status = 0
 	}
 
-	canal <- fmt.Sprintf("Site: %s | Status: %d", site.GetNome(), status)
+	site.Status = status
+	err = store.AtualizarStatusSite(site.ID, status)
+
+	return err
 }
