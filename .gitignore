@@ -1,1 +1,65 @@
+# =====================
+# Node / Next.js (pasta web/)
+# =====================
+
+# dependencies
+node_modules
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+coverage
+
+# next.js
+.next
+out
+
+# production
+build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env files
+.env*
+.vercel
+
+# typescript (frontend)
+*.tsbuildinfo
+next-env.d.ts
+
+# =====================
+# Go / projeto backend
+# =====================
+
+# build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go modules local cache (se aparecer)
+vendor/
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# DB
 monitor.db
